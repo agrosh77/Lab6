@@ -1,0 +1,320 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cook County Migration Outflows</title>
+
+    <!-- Leaflet's CSS controls how the map looks -->
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <!-- Leaflet's JavaScript makes the map interactive -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Our ten migration records from QGIS -->
+    <script src="cook.js"></script>
+	
+	
+	<!-- Animation library required by the flowmap plugin -->
+	<script src="https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+
+	<!-- Leaflet Canvas Flowmap plugin -->
+	<script src="CanvasFlowmapLayer.js"></script>
+
+    <style>
+        /* Make the map fill the entire browser window */
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+		
+		
+        /* Title box displayed above the map */
+        .map-title {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            font-family: Verdana, sans-serif;
+            max-width: 350px;
+        }
+
+        .map-title h2 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            color: #24476A;
+        }
+
+        .map-title p {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #444;
+        }
+
+		
+		
+		
+        /* Legend explaining the migration flow categories */
+        .map-legend {
+            position: absolute;
+            bottom: 30px;
+            left: 15px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 18px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            font-family: Verdana, sans-serif;
+            font-size: 12px;
+            color: #444;
+        }
+
+        .map-legend h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            color: #24476A;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .legend-line {
+            display: inline-block;
+            width: 45px;
+            border-radius: 4px;
+        }
+
+		
+		
+		
+		
+    </style>
+</head>
+
+<body>
+    <!-- This is where Leaflet will display the map -->
+    <div id="map"></div>
+	
+	
+	
+    <!-- Title and description for the migration map -->
+    <div class="map-title">
+        <h2>Where Are Cook County Residents Moving?</h2>
+        <p>
+            Top 10 U.S. county destinations for people moving
+            out of Cook County, Illinois.
+            <br>
+            Based on 2016–2020 American Community Survey estimates.
+        </p>
+    </div>
+
+	
+    <!-- Legend for the migration flow categories -->
+    <div class="map-legend">
+        <h3>People Moving from Cook County</h3>
+
+        <div class="legend-item">
+            <span class="legend-line"
+                  style="height: 6px; background: #24476A;"></span>
+            <span>900–1,000 people</span>
+        </div>
+
+        <div class="legend-item">
+            <span class="legend-line"
+                  style="height: 4px; background: #3C7A6B;"></span>
+            <span>850–899 people</span>
+        </div>
+
+        <div class="legend-item">
+            <span class="legend-line"
+                  style="height: 2px; background: #8BC8BE;"></span>
+            <span>800–849 people</span>
+        </div>
+    </div>
+
+
+
+    <script>
+        // Create the map, centered on the United States
+        var map = L.map('map').setView([39, -96], 4);
+
+        // Add a basemap so we can see the geography
+        L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+            {
+                attribution: 'Tiles &copy; Esri'
+            }
+        ).addTo(map);
+
+        
+        // Create a separate canvas for our migration flows
+        var canvasRenderer = L.canvas();
+
+        // Create the flowmap using our ten selected counties
+        var flowmap = L.canvasFlowmapLayer(cook, {
+
+            // Tell the plugin which coordinates represent
+            // Cook County and which represent the destinations
+            originAndDestinationFieldIds: {
+                originUniqueIdField: 'GEOID_A',
+                originGeometry: {
+                    x: 'A_lon',
+                    y: 'A_lat'
+                },
+                destinationUniqueIdField: 'GEOID_B',
+                destinationGeometry: {
+                    x: 'B_lon',
+                    y: 'B_lat'
+                }
+            },
+
+            // Show all ten migration paths immediately
+            pathDisplayMode: 'all',
+
+            // Start the flow animation automatically
+            animationStarted: true,
+            animationDuration: 2000,
+			
+			
+            // Style the migration paths based on the number
+            // of people moving from Cook County
+            canvasBezierStyle: {
+                type: 'classBreaks',
+                field: 'Flow_A2B',
+                classBreakInfos: [
+                    {
+                        classMinValue: 800,
+                        classMaxValue: 849,
+                        symbol: {
+                            strokeStyle: '#8BC8BE',
+                            lineWidth: 2
+                        }
+                    },
+                    {
+                        classMinValue: 850,
+                        classMaxValue: 899,
+                        symbol: {
+                            strokeStyle: '#3C7A6B',
+                            lineWidth: 4
+                        }
+                    },
+                    {
+                        classMinValue: 900,
+                        classMaxValue: 1000,
+                        symbol: {
+                            strokeStyle: '#24476A',
+                            lineWidth: 6
+                        }
+                    }
+                ],
+                defaultSymbol: {
+                    strokeStyle: '#D96C6C',
+                    lineWidth: 2
+                }
+            },
+
+
+
+
+                           animatedCanvasBezierStyle: {
+                type: 'simple',
+                symbol: {
+                    strokeStyle: '#F2C94C',
+                    lineWidth: 3,
+                    lineDashOffsetSize: 4,
+                    lineCap: 'round',
+                    shadowColor: '#F2C94C',
+                    shadowBlur: 2
+                }
+            },
+
+
+
+
+
+
+
+            // Style the origin and destination markers
+            style: function(feature) {
+                if (feature.properties.isOrigin) {
+                    return {
+                        renderer: canvasRenderer,
+                        radius: 7,
+                        color: '#24476A',
+                        fillColor: '#F2C94C',
+                        fillOpacity: 1,
+                        weight: 2
+                    };
+                } else {
+                    return {
+                        renderer: canvasRenderer,
+                        radius: 5,
+                        color: '#24476A',
+                        fillColor: '#3C7A6B',
+                        fillOpacity: 0.9,
+                        weight: 1
+                    };
+                }
+            }
+
+        }).addTo(map);
+
+        // Check that all ten migration records loaded
+        console.log("Migration records:", cook.features.length);
+
+		
+		
+		
+        // Add clickable markers with migration information
+        // Each destination gets a popup showing its exact total
+        cook.features.forEach(function(feature) {
+
+            var county = feature.properties.County_B;
+            var state = feature.properties.State_B;
+            var migrants = feature.properties.Flow_A2B;
+
+            // Leaflet uses latitude first, then longitude
+            var lat = feature.properties.B_lat;
+            var lon = feature.properties.B_lon;
+
+            // Create an invisible marker over each destination
+            // so users can click to see more information
+             L.circleMarker([lat, lon], {
+                radius: 8,
+                color: '#24476A',
+                weight: 1,
+                fillColor: '#3C7A6B',
+                fillOpacity: 0.9,
+                interactive: true,
+                renderer: L.svg()
+            })
+            .bindPopup(
+                '<strong>' + county + ', ' + state + '</strong>' +
+                '<br>People moving from Cook County: ' +
+                '<strong>' + migrants.toLocaleString() + '</strong>'
+            )
+            .addTo(map);
+        });
+
+		
+		
+		
+		
+    </script>
+</body>
+</html>
