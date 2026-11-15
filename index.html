@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <title>Cook County Migration Outflows</title>
 
-    <!-- Leaflet's CSS controls how the map looks -->
+    <!-- Leaflet's CSS  -->
     <link rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
-    <!-- Leaflet's JavaScript makes the map interactive -->
+    <!-- Leaflet's JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- Our ten migration records from QGIS -->
@@ -150,10 +150,12 @@
 
 
     <script>
-        // Create the map, centered on the United States
-        var map = L.map('map').setView([39, -96], 4);
+        var map = L.map('map', {
+    zoomSnap: 0.25,
+    zoomDelta: 0.25
+}).setView([39, -96], 4.5);
 
-        // Add a basemap so we can see the geography
+        // Add a basemap 
         L.tileLayer(
             'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
             {
